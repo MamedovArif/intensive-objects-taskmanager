@@ -1,32 +1,14 @@
+import Api from "./api.js";
 import BoardComponent from "./view/board.js";
 import BoardPresenter from "./presenter/board.js";
 import FilterPresenter from "./presenter/filter.js";
-import StatisticsComponent from "./view/statistics.js";
 import SiteMenuComponent, {MenuItem} from "./view/site-menu.js";
+import StatisticsComponent from "./view/statistics.js";
 import TasksModel from "./model/tasks.js";
-import {generateTasks} from "./mock/task.js";
 import {render, RenderPosition} from "./utils/render.js";
 
-const TASK_COUNT = 22;
-
-const siteMainElement = document.querySelector(`.main`);
-const siteHeaderElement = siteMainElement.querySelector(`.main__control`);
-const siteMenuComponent = new SiteMenuComponent();
-
-render(siteHeaderElement, siteMenuComponent, RenderPosition.BEFOREEND);
-
-const tasks = generateTasks(TASK_COUNT);
-const tasksModel = new TasksModel();
-tasksModel.setTasks(tasks);
-
-const filterPresenter = new FilterPresenter(siteMainElement, tasksModel);
-filterPresenter.render();
-
-const boardComponent = new BoardComponent();
-render(siteMainElement, boardComponent, RenderPosition.BEFOREEND);
-
-const boardPresenter = new BoardPresenter(boardComponent, tasksModel);
-boardPresenter.render();
+const AUTHORIZATION = `Basic hSncv2sddfSwclsaj`;
+const END_POINT = `https://11.ecmascript.pages.academy/task-manager`;
 
 const dateTo = new Date();
 const dateFrom = (() => {
@@ -34,7 +16,22 @@ const dateFrom = (() => {
   d.setDate(d.getDate() - 7);
   return d;
 })();
+
+const api = new Api(END_POINT, AUTHORIZATION);
+const tasksModel = new TasksModel();
+
+const siteMainElement = document.querySelector(`.main`);
+const siteHeaderElement = siteMainElement.querySelector(`.main__control`);
+const siteMenuComponent = new SiteMenuComponent();
 const statisticsComponent = new StatisticsComponent({tasks: tasksModel, dateFrom, dateTo});
+
+const boardComponent = new BoardComponent();
+const boardPresenter = new BoardPresenter(boardComponent, tasksModel, api);
+const filterPresenter = new FilterPresenter(siteMainElement, tasksModel);
+
+render(siteHeaderElement, siteMenuComponent, RenderPosition.BEFOREEND);
+filterPresenter.render();
+render(siteMainElement, boardComponent, RenderPosition.BEFOREEND);
 render(siteMainElement, statisticsComponent, RenderPosition.BEFOREEND);
 statisticsComponent.hide();
 
@@ -56,3 +53,9 @@ siteMenuComponent.setOnChange((menuItem) => {
       break;
   }
 });
+
+api.getTasks()
+  .then((tasks) => {
+    tasksModel.setTasks(tasks);
+    boardPresenter.render();
+  });
